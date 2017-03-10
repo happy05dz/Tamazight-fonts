@@ -1,0 +1,166 @@
+﻿unit Unit1;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Touch.Keyboard, Vcl.Touch.KeyboardTypes,
+  Vcl.Menus;
+
+type
+  TTempTouchKeyboard = class(TCustomTouchKeyboard);
+  TMyKeyboardButton  = class(TCustomKeyboardButton)
+  public
+    procedure Paint(Canvas: TCustomCanvas = nil); override;
+  end;
+
+type
+  TForm1 = class(TForm)
+    TouchKeyboard1: TTouchKeyboard;
+    Memo1: TMemo;
+    MainMenu1: TMainMenu;
+    fI1: TMenuItem;
+    EXITE1: TMenuItem;
+    Aide1: TMenuItem;
+    RadioButton1: TRadioButton;
+    RadioButton2: TRadioButton;
+    procedure FormCreate(Sender: TObject);
+    procedure RadioButton2Click(Sender: TObject);
+    procedure RadioButton1Click(Sender: TObject);
+  private
+    { Déclarations privées }
+  public
+    { Déclarations publiques }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.dfm}
+
+
+procedure TMyKeyboardButton.Paint(Canvas: TCustomCanvas);
+var
+  LRect:    TRect;
+  LCanvas:  TCanvas;
+  LCaption: String;
+const
+  //TDrawState = (dsNormal, dsPressed, dsDisabled);
+  acKeyColors: array[TDrawState] of TColor = (clWhite, clYellow, clGray);
+
+  procedure DrawOneChar(rSize: TRect; cWhere: TCanvas; sWhat: string);
+  begin
+    rSize.Left := rSize.Left + (((rSize.Right-rSize.Left) - cWhere.TextWidth(sWhat)) div 2);
+    rSize.Top := rSize.Top + (((rSize.Bottom-rSize.Top) - cWhere.TextHeight(sWhat)) div 2);
+
+    cWhere.TextOut(rSize.Left, rSize.Top, sWhat);
+  end;
+
+  function GetOverrideCaption(Keyboard: TCustomTouchKeyboard; const Key: TVirtualKey; var Caption: string): Boolean;
+  begin
+    if Keyboard.CaptionOverrides.HasCaption(Key.PublishedName) then
+    begin
+      Caption := Keyboard.CaptionOverrides.GetCaption(Key.PublishedName);
+      Exit(True);
+    end
+    else if Keyboard.CaptionOverrides.HasCaption(Key.PublishedName) then
+    begin
+      Caption := Keyboard.CaptionOverrides.GetCaption(Key.PublishedName);
+      Exit(True);
+    end;
+    Result := False;
+  end;
+
+begin
+  if Canvas <> nil then
+    LCanvas := Canvas as TCanvas
+  else
+    LCanvas := TTempTouchKeyboard(Parent).Canvas;
+
+  LRect := ClientRect;
+  LCanvas.Font.Name   := 'Tamazight Tifinaghe';
+  LCanvas.Pen.Color   := clBlack;
+  LCanvas.Font.Color  := clBlack;
+  LCanvas.Font.Style  := [fsBold];
+  LCanvas.Brush.Color := acKeyColors[State];
+  LCanvas.Rectangle(LRect);
+
+  case KeyImage of
+    kiOverride:
+    begin
+      if not GetOverrideCaption(Parent, Key, LCaption) then
+        LCaption := Caption;
+      DrawOneChar(LRect, LCanvas, LCaption);
+    end;
+    kiText:
+    begin
+      if ((Length(Caption) > 0) and
+        ((Caption[1] = '^') or (Caption[1] = '¨'))) then
+        Caption := Caption[1];
+      DrawOneChar(LRect, LCanvas, Caption);
+    end;
+    kiTab:       DrawOneChar(LRect, LCanvas, 'Tabulation');
+    kiShift:     DrawOneChar(LRect, LCanvas, 'Majuscule');
+    kiEnter:     DrawOneChar(LRect, LCanvas, 'Entrée');
+    kiBackspace: DrawOneChar(LRect, LCanvas, '←');
+    kiUp:        DrawOneChar(LRect, LCanvas, '↑');
+    kiDown:      DrawOneChar(LRect, LCanvas, '↓');
+    kiLeft:      DrawOneChar(LRect, LCanvas, '←');
+    kiRight:     DrawOneChar(LRect, LCanvas, '→');
+    kiTallEnter: DrawOneChar(LRect, LCanvas, 'Entrée');
+  end;
+end;
+
+function LoadResourceFontByID( ResourceID : Integer; ResType: PChar ) : Boolean;
+var
+  ResStream : TResourceStream;
+  FontsCount : DWORD;
+begin
+  ResStream := TResourceStream.CreateFromID(hInstance, ResourceID, ResType);
+  try
+    Result := (AddFontMemResourceEx(ResStream.Memory, ResStream.Size, nil, @FontsCount) <> 0);
+  finally
+    ResStream.Free;
+  end;
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+var
+ haFont:thandle;
+begin
+  TouchKeyboard1.DefaultButtonClass := TMyKeyboardButton;
+  TTempTouchKeyboard(TouchKeyboard1).CreateKeyboard();
+  TouchKeyboard1.Redraw;
+
+  if LoadResourceFontByID(1, RT_FONT) then begin
+    memo1.Font.name := 'Tamazight Tifinaghe';
+    memo1.Font.Size := 24;
+  end;
+  RadioButton1.Checked := True;
+end;
+
+procedure TForm1.RadioButton1Click(Sender: TObject);
+var
+  LCanvas:  TCanvas;
+  LRect:    TRect;
+begin
+  if LoadResourceFontByID(1, RT_FONT) then begin
+    memo1.Font.name := 'Tamazight Tifinaghe';
+    memo1.Font.Size := 24;
+  end;
+end;
+
+procedure TForm1.RadioButton2Click(Sender: TObject);
+var
+  LCanvas:  TCanvas;
+  LRect:    TRect;
+begin
+  if LoadResourceFontByID(2, RT_FONT) then begin
+    memo1.Font.name := 'Tamazight Latin';
+    memo1.Font.Size := 24;
+  end;
+end;
+
+end.

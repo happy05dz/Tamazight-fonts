@@ -1,0 +1,14 @@
+
+===================================
+09-03-2017: Version 0.9 Beta
+===================================
+Fonts list :
+     - Tamazight Latin
+     - Tamazight Latin wfus
+     - Tamazight Tifinaghe
+     - Tamazight Tifinaghe wfus
+	 
+Helpful tools :
+     - Tamazight Keybord Online [html, css, js]
+	 - Tamazight Keybord for windows [Delphi]
+	 - Tamazight Latin to Tifinaghe [Delphi]

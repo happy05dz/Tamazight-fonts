@@ -1,0 +1,172 @@
+﻿unit Unit1;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Touch.Keyboard, Vcl.Touch.KeyboardTypes;
+
+type
+  TTempTouchKeyboard = class(TCustomTouchKeyboard);
+  TMyKeyboardButton  = class(TCustomKeyboardButton)
+  public
+    procedure Paint(Canvas: TCustomCanvas = nil); override;
+  end;
+
+type
+  TForm1 = class(TForm)
+    TouchKeyboard1: TTouchKeyboard;
+    Memo1: TMemo;
+    procedure FormCreate(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+  private
+    { Déclarations privées }
+  public
+    { Déclarations publiques }
+  end;
+
+CONST
+  MM_MAX_NUMAXES =  16;
+  FR_PRIVATE     = $10;
+  FR_NOT_ENUM    = $20;
+
+ TYPE
+  PDesignVector = ^TDesignVector;
+  TDesignVector = Packed Record
+   dvReserved: DWORD;
+   dvNumAxes : DWORD;
+   dvValues  : Array[0..MM_MAX_NUMAXES-1] Of LongInt;
+  End;
+
+var
+  Form1: TForm1;
+
+Function AddFontResourceEx    (Dir : PAnsiChar;
+                                Flag: Cardinal;
+                                PDV : PDesignVector): Int64; StdCall;
+                                External 'GDI32.dll' Name 'AddFontResourceExA';
+
+ Function RemoveFontResourceEx (Dir : PAnsiChar;
+                                Flag: Cardinal;
+                                PDV : PDesignVector): Int64; StdCall;
+                                External 'GDI32.dll' Name 'RemoveFontResourceExA';
+
+implementation
+
+{$R *.dfm}
+
+
+procedure TMyKeyboardButton.Paint(Canvas: TCustomCanvas);
+var
+  LRect:    TRect;
+  LCanvas:  TCanvas;
+  LCaption: String;
+const
+  //TDrawState = (dsNormal, dsPressed, dsDisabled);
+  acKeyColors: array[TDrawState] of TColor = (clWhite, clYellow, clGray);
+
+  procedure DrawOneChar(rSize: TRect; cWhere: TCanvas; sWhat: string);
+  begin
+    rSize.Left := rSize.Left + (((rSize.Right-rSize.Left) - cWhere.TextWidth(sWhat)) div 2);
+    rSize.Top := rSize.Top + (((rSize.Bottom-rSize.Top) - cWhere.TextHeight(sWhat)) div 2);
+
+    cWhere.TextOut(rSize.Left, rSize.Top, sWhat);
+  end;
+
+  function GetOverrideCaption(Keyboard: TCustomTouchKeyboard; const Key: TVirtualKey; var Caption: string): Boolean;
+  begin
+    if Keyboard.CaptionOverrides.HasCaption(Key.PublishedName) then
+    begin
+      Caption := Keyboard.CaptionOverrides.GetCaption(Key.PublishedName);
+      Exit(True);
+    end
+    else if Keyboard.CaptionOverrides.HasCaption(Key.PublishedName) then
+    begin
+      Caption := Keyboard.CaptionOverrides.GetCaption(Key.PublishedName);
+      Exit(True);
+    end;
+    Result := False;
+  end;
+
+begin
+  if Canvas <> nil then
+    LCanvas := Canvas as TCanvas
+  else
+    LCanvas := TTempTouchKeyboard(Parent).Canvas;
+
+  LRect := ClientRect;
+  LCanvas.Font.Name   := 'tamazight Tifinaghe 1';
+  LCanvas.Pen.Color   := clBlack;
+  LCanvas.Font.Color  := clBlack;
+  LCanvas.Font.Style  := [fsBold];
+  LCanvas.Brush.Color := acKeyColors[State];
+  LCanvas.Rectangle(LRect);
+
+  case KeyImage of
+    kiOverride:
+    begin
+      if not GetOverrideCaption(Parent, Key, LCaption) then
+        LCaption := Caption;
+      DrawOneChar(LRect, LCanvas, LCaption);
+    end;
+    kiText:
+    begin
+      if ((Length(Caption) > 0) and
+        ((Caption[1] = '^') or (Caption[1] = '¨'))) then
+        Caption := Caption[1];
+      DrawOneChar(LRect, LCanvas, Caption);
+    end;
+    kiTab:       DrawOneChar(LRect, LCanvas, 'Tabulation');
+    kiShift:     DrawOneChar(LRect, LCanvas, 'Majuscule');
+    kiEnter:     DrawOneChar(LRect, LCanvas, 'Entrée');
+    kiBackspace: DrawOneChar(LRect, LCanvas, '←');
+    kiUp:        DrawOneChar(LRect, LCanvas, '↑');
+    kiDown:      DrawOneChar(LRect, LCanvas, '↓');
+    kiLeft:      DrawOneChar(LRect, LCanvas, '←');
+    kiRight:     DrawOneChar(LRect, LCanvas, '→');
+    kiTallEnter: DrawOneChar(LRect, LCanvas, 'Entrée');
+  end;
+end;
+
+Procedure LoadFonts;
+  Var
+   AppPath: String;
+ Begin
+  AppPath:= ExtractFilePath(Application.ExeName);
+
+   If FileExists(AppPath+'FONTS\MONO.ttf')
+   Then
+    If AddFontResourceEx(PAnsiChar(AppPath+'FONTS\MONO.ttf'), FR_Private, Nil) <> 0
+    Then SendMessage(Form1.Handle, WM_FONTCHANGE, 0, 0);
+ End;
+
+
+Procedure RemoveFonts;
+  Var
+   AppPath: String;
+ Begin
+  AppPath:= ExtractFilePath(Application.ExeName);
+
+   If FileExists(AppPath+'FONTS\MONO.ttf')
+   Then
+    If RemoveFontResourceEx(PAnsiChar(AppPath+'FONTS\MONO.ttf'), FR_Private, Nil) <> 0
+    Then SendMessage(Form1.Handle, WM_FONTCHANGE, 0, 0);
+ End;
+
+
+
+procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+RemoveFonts;
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  TouchKeyboard1.DefaultButtonClass := TMyKeyboardButton;
+  TTempTouchKeyboard(TouchKeyboard1).CreateKeyboard();
+  TouchKeyboard1.Redraw;
+  LoadFonts;
+  memo1.Font.name := 'tamazight Tifinaghe 1';
+end;
+
+end.
